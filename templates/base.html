@@ -1,0 +1,133 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Rock Identification Using CNN</title>
+    <link href="https://cdn.bootcss.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <style>
+        .bg-dark {
+            background-color: #42678c !important;
+        }
+
+        #result {
+            color: #0a1c4ed1;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .upload-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .loader {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #uploaded-image {
+            max-width: 300px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">ROCK IDENTIFICATION USING DEEP CONVOLUTION NEURAL NETWORKS</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="content" style="margin-top:2em">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3>Rock Identification</h3>
+                    <p>Upload an image of a rock and let our CNN model predict its type.</p>
+                </div>
+                <div class="col-sm-6">
+                    <h4>Upload an image for prediction</h4>
+                    <form id="upload-file" enctype="multipart/form-data">
+                        <label for="imageUpload" class="upload-label">Choose an image:</label>
+                        <input type="file" name="image" id="imageUpload" accept=".png, .jpg, .jpeg" required>
+                        <br><br>
+                        <button type="button" class="btn btn-primary btn-lg" id="btn-predict">Predict Rock Type</button>
+                    </form>
+
+                    <div class="loader">
+                        <p>Loading...</p>
+                    </div>
+
+                    <h3 id="result"></h3>
+                    <img id="uploaded-image" style="display: none;" src="" alt="Uploaded Rock Image">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#imageUpload').on('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#uploaded-image').attr('src', e.target.result).show();
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    $('#uploaded-image').hide();
+                }
+            });
+
+            $('#btn-predict').on('click', function() {
+                const file = $('#imageUpload')[0].files[0];
+                if (!file) {
+                    alert('Please select an image first.');
+                    return;
+                }
+                $('.loader').show();
+                $('#result').text('');
+
+                const formData = new FormData();
+                formData.append('image', file);
+
+                $.ajax({
+                    type: 'POST',
+                    url: 'http://127.0.0.1:5000/predict',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(data) {
+                        $('.loader').hide();
+                        if(data.result){
+                            $('#result').text(data.result);
+                        }else{
+                            $('#result').text("Prediction Failed");
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $('.loader').hide();
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            $('#result').text('Error: ' + response.error);
+                        } catch (e) {
+                            $('#result').text('An unknown error occurred.');
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
