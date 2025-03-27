@@ -1,4 +1,3 @@
-# Ensure future imports are at the top
 from __future__ import division, print_function  
 
 import os
@@ -75,14 +74,17 @@ def upload():
         
         # Save uploaded file
         basepath = os.path.dirname(__file__)
-        file_path = os.path.join(basepath, 'uploads', secure_filename(f.filename))
+        upload_dir = os.path.join(basepath, 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)  # Ensure the directory exists
+        file_path = os.path.join(upload_dir, secure_filename(f.filename))
         f.save(file_path)
 
         # Preprocess the image
         img = image.load_img(file_path, target_size=(64, 64))
         x = image.img_to_array(img)
         x = np.expand_dims(x, axis=0)
-
+        x = preprocess_input(x)
+        
         # Make prediction
         prediction = model.predict(x)
         predicted_class = np.argmax(prediction, axis=1)[0]
@@ -95,10 +97,10 @@ def upload():
         
         # Get rock type and description
         rock_type = index[predicted_class]
-        result = f'This is {rock_type} and it is {rock_info[rock_type]}'
+        result = f'This is {rock_type} and it is {rock_info.get(rock_type, "a type of rock.")}'
         print('Prediction result:', result)
 
-        return jsonify({'result': result})  # Send result as JSON
+        return jsonify({'result': result, 'confidence': float(confidence)})  # Send result as JSON
     
     except Exception as e:
         print('Error:', e)
